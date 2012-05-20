@@ -1,95 +1,99 @@
 package com.novoda.zoidberg
 
-import akka.actor._
-import akka.routing.RoundRobinRouter
-import akka.util.Duration
-import akka.util.duration._
-import com.android.chimpchat.core.IChimpDevice
+import akka.kernel.Bootable
+import akka.actor.{Props, Actor, ActorSystem}
+import com.android.ddmlib.AndroidDebugBridge.{IDeviceChangeListener, IDebugBridgeChangeListener}
+import com.android.ddmlib.{IDevice, AndroidDebugBridge}
 
-object Pi extends App {
+case object Start
 
-  calculate(nrOfWorkers = 4, nrOfElements = 10000, nrOfMessages = 10000)
+trait ADBChangeListener extends IDebugBridgeChangeListener {
+  def bridgeChanged(adb: AndroidDebugBridge) {
+    println("Bridge changed")
+  }
+}
 
-  sealed trait PiMessage
-
-  case object Calculate extends PiMessage
-
-  case class Work(start: Int, nrOfElements: Int) extends PiMessage
-
-  case class Result(value: Double) extends PiMessage
-
-  case class PiApproximation(pi: Double, duration: Duration)
-
-  class Worker extends Actor {
-
-    def calculatePiFor(start: Int, nrOfElements: Int): Double = {
-      var acc = 0.0
-      for (i ← start until (start + nrOfElements))
-        acc += 4.0 * (1 - (i % 2) * 2) / (2 * i + 1)
-      acc
-    }
-
-    def receive = {
-      case Work(start, nrOfElements) ⇒
-        sender ! Result(calculatePiFor(start, nrOfElements)) // perform the work
-    }
+trait DeviceChangeListener extends IDeviceChangeListener {
+  def deviceConnected(p1: IDevice) {
+    println("DEVICE CONNECTED")
   }
 
-  class Master(nrOfWorkers: Int, nrOfMessages: Int, nrOfElements: Int, listener: ActorRef) extends Actor {
-
-    var pi: Double = _
-    var nrOfResults: Int = _
-    val start: Long = System.currentTimeMillis
-
-    val workerRouter = context.actorOf(Props[Worker].withRouter(RoundRobinRouter(nrOfWorkers)), name = "workerRouter")
-
-    def receive = {
-      case Calculate ⇒
-        for (i ← 0 until nrOfMessages) workerRouter ! Work(i * nrOfElements, nrOfElements)
-      case Result(value) ⇒
-        pi += value
-        nrOfResults += 1
-        if (nrOfResults == nrOfMessages) {
-          // Send the result to the listener
-          listener ! PiApproximation(pi, duration = (System.currentTimeMillis - start).millis)
-          // Stops this actor and all its supervised children
-          context.stop(self)
-        }
-    }
-
+  def deviceDisconnected(p1: IDevice) {
+    println("DEVICE DiscCONNECTED")
   }
 
-  class Listener extends Actor {
-    def receive = {
-      case PiApproximation(pi, duration) ⇒
-        println("\n\tPi approximation: \t\t%s\n\tCalculation time: \t%s"
-          .format(pi, duration))
-        context.system.shutdown()
-    }
+  def deviceChanged(p1: IDevice, p2: Int) {
+    println("DEVICE Changed")
   }
+}
 
-  sealed trait DeviceLifecycle
-  case class DeviceConnected(device: IChimpDevice) extends DeviceLifecycle
-  case class DeviceDisconnected(device: IChimpDevice) extends DeviceLifecycle
-  case class DeviceChanged(device: IChimpDevice, changeMask: Int) extends DeviceLifecycle
+class DeviceManagerActor(adb: AndroidDebugBridge) extends Actor with ADBChangeListener with DeviceChangeListener {
 
-  class DeviceListener extends Actor {
-    def receive = {
-      case DeviceConnected(device: IChimpDevice) => println("Device connected " + device.getPropertyList)
-    }
+  val worldActor = context.actorOf(Props[WorldActor])
+
+  override def preStart() {
+    AndroidDebugBridge.addDebugBridgeChangeListener(_)
+    AndroidDebugBridge.addDeviceChangeListener(_)
+    adb.getDevices.foreach(println)
+    println("PRE")
   }
 
 
-  def calculate(nrOfWorkers: Int, nrOfElements: Int, nrOfMessages: Int) {
-    // Create an Akka system
-    val system = ActorSystem("PiSystem")
-    // create the result listener, which will print the result and shutdown the system
-    val listener = system.actorOf(Props[Listener], name = "listener")
-    // create the master
-    val master = system.actorOf(Props(new Master(nrOfWorkers, nrOfMessages, nrOfElements, listener)), name = "master")
-    // start the calculation
-    master ! Calculate
-
+  override def postStop() {
+    super.postStop()
+//    AndroidDebugBridge.removeDebugBridgeChangeListener _
+//    AndroidDebugBridge.removeDeviceChangeListener _
   }
 
+  def receive = {
+    case Start ⇒ {
+      println("HELLO WORLD FROM PRINTLN")
+      worldActor ! "Hello"
+    }
+    case message: String ⇒
+      println("Received message '%s'" format message)
+  }
+
+
+  type DeviceStore = Map[String, IDevice]
+
+}
+
+class CommandListener extends Actor {
+  val worldActor = context.actorOf(Props[WorldActor])
+
+  def receive = {
+    case Start ⇒ worldActor ! "Hello"
+    case message: String ⇒
+      println("Received message '%s'" format message)
+  }
+}
+
+class WorldActor extends Actor {
+  def receive = {
+    case message: String ⇒ sender ! (message.toUpperCase + " world!")
+  }
+}
+
+class ZoidbergKernel extends Bootable with DeviceChangeListener {
+
+  val system = ActorSystem("zoidberg")
+
+  lazy val androidHome = System.getenv("ANDROID_HOME")
+
+  lazy val adb: AndroidDebugBridge = {
+    AndroidDebugBridge.init(false)
+    //AndroidDebugBridge.addDeviceChangeListener(this)
+    AndroidDebugBridge.createBridge(androidHome + "/platform-tools/adb", true)
+  }
+
+  def startup = {
+    system.actorOf(Props(new DeviceManagerActor(adb))) ! Start
+    system.actorOf(Props[CommandListener]) ! Start
+  }
+
+  def shutdown = {
+    AndroidDebugBridge.terminate()
+    system.shutdown()
+  }
 }
