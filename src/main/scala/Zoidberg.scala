@@ -4,6 +4,7 @@ import akka.kernel.Bootable
 import akka.actor.{Props, Actor, ActorSystem}
 import com.android.ddmlib.AndroidDebugBridge.{IDeviceChangeListener, IDebugBridgeChangeListener}
 import com.android.ddmlib.{IDevice, AndroidDebugBridge}
+import novoda.zoidberg.akka.DeviceStoreExtension
 
 case object Start
 
@@ -27,22 +28,22 @@ trait DeviceChangeListener extends IDeviceChangeListener {
   }
 }
 
-class DeviceManagerActor(adb: AndroidDebugBridge) extends Actor with ADBChangeListener with DeviceChangeListener {
+class DeviceManagerActor() extends Actor with ADBChangeListener with DeviceChangeListener {
 
   val worldActor = context.actorOf(Props[WorldActor])
 
   override def preStart() {
-    AndroidDebugBridge.addDebugBridgeChangeListener(_)
-    AndroidDebugBridge.addDeviceChangeListener(_)
-    adb.getDevices.foreach(println)
+    //    AndroidDebugBridge.addDebugBridgeChangeListener(this)
+    //    AndroidDebugBridge.addDeviceChangeListener(this)
+    //    adb.getDevices.foreach(println)
     println("PRE")
   }
 
 
   override def postStop() {
     super.postStop()
-//    AndroidDebugBridge.removeDebugBridgeChangeListener _
-//    AndroidDebugBridge.removeDeviceChangeListener _
+    //    AndroidDebugBridge.removeDebugBridgeChangeListener _
+    //    AndroidDebugBridge.removeDeviceChangeListener _
   }
 
   def receive = {
@@ -81,14 +82,10 @@ class ZoidbergKernel extends Bootable with DeviceChangeListener {
 
   lazy val androidHome = System.getenv("ANDROID_HOME")
 
-  lazy val adb: AndroidDebugBridge = {
-    AndroidDebugBridge.init(false)
-    //AndroidDebugBridge.addDeviceChangeListener(this)
-    AndroidDebugBridge.createBridge(androidHome + "/platform-tools/adb", true)
-  }
 
   def startup = {
-    system.actorOf(Props(new DeviceManagerActor(adb))) ! Start
+    DeviceStoreExtension(system)
+    system.actorOf(Props(new DeviceManagerActor())) ! Start
     system.actorOf(Props[CommandListener]) ! Start
   }
 
