@@ -4,7 +4,11 @@ import java.util.concurrent.atomic.AtomicLong
 import akka.actor._
 import com.android.ddmlib.AndroidDebugBridge.{IDeviceChangeListener, IDebugBridgeChangeListener}
 import com.android.ddmlib.{IDevice, AndroidDebugBridge}
+import akka.event.EventStream
 
+case class DeviceConnected(device: IDevice)
+case class DeviceDisconnected(device: IDevice)
+case class DeviceChanged(device: IDevice, changeMask: Int)
 
 trait ADBChangeListener extends IDebugBridgeChangeListener {
   def bridgeChanged(adb: AndroidDebugBridge) {
@@ -13,26 +17,19 @@ trait ADBChangeListener extends IDebugBridgeChangeListener {
 }
 
 trait DeviceChangeListener extends IDeviceChangeListener {
-  def deviceConnected(p1: IDevice) {
-    println("DEVICE CONNECTED")
-  }
-
-  def deviceDisconnected(p1: IDevice) {
-    println("DEVICE DiscCONNECTED")
-  }
-
-  def deviceChanged(p1: IDevice, p2: Int) {
-    println("DEVICE Changed")
-  }
+  def eventStream: EventStream
+  def deviceConnected(device: IDevice) = eventStream.publish(DeviceConnected(device))
+  def deviceDisconnected(device: IDevice) = eventStream.publish(DeviceDisconnected(device))
+  def deviceChanged(device: IDevice, changeMask: Int) = eventStream.publish(DeviceChanged(device, changeMask))
 }
 
 case class Listener(listener: ActorRef)
 
 class DeviceStoreExtensionImpl(system: ActorSystem, adbLocation: Option[String]) extends Extension with ADBChangeListener with DeviceChangeListener {
 
-  start
-
   private val counter = new AtomicLong(0)
+
+  def eventStream = system.eventStream
 
   def increment() = counter.incrementAndGet()
 
@@ -50,17 +47,30 @@ class DeviceStoreExtensionImpl(system: ActorSystem, adbLocation: Option[String])
   }
 
   def stop() {
+    AndroidDebugBridge.removeDebugBridgeChangeListener(this)
+    AndroidDebugBridge.removeDeviceChangeListener(this)
+    AndroidDebugBridge.terminate()
   }
 
   //
   //  def newStore(listener: Listener): ActorRef = {
   //  }
   //
-  //  def newDevice(): ActorRef = {
-  //
-  //  }
+//  def newDevice(): ActorRef = {
+//             Props(new )
+//  }
 }
 
+
+case class ShellCommand(s: String)
+
+class DeviceActor(device: IDevice) extends Actor {
+  def receive = {
+    case ShellCommand(command) => {
+      println("hello world")
+    }
+  }
+}
 
 object DeviceStoreExtensionImpl {
   implicit def enrichSystem(system: ExtendedActorSystem) = new DeviceStoreExtensionImpl(system, None)

@@ -1,23 +1,24 @@
 package com.novoda.zoidberg
 
-import com.android.chimpchat.core.IChimpDevice
 import com.android.ddmlib.IDevice
-import com.android.hierarchyviewerlib.device.{DeviceBridge, ViewNode}
+import com.android.hierarchyviewerlib.device.ViewNode
 import com.android.hierarchyviewerlib.device.ViewNode.Property
 
 class RichDevice(device: IDevice) {
 
   def views() {
-    DeviceBridge.startViewServer(device)
-    DeviceBridge.loadWindows(device)
+    //    DeviceBridge.startViewServer(device)
+    //    DeviceBridge.loadWindows(device)
   }
 }
 
+object RichDevice {
+  implicit def toRichDevice(device: IDevice) = new RichDevice(device)
+}
 
-class Device(chimp: IChimpDevice) {
+
+class Device(javaDevice: IDevice) {
   def property(what: String) = {
-    chimp.getSystemProperty(what)
-    chimp.getHierarchyViewer
   }
 
 
