@@ -17,7 +17,7 @@ object RichDevice {
 }
 
 
-class Device(javaDevice: IDevice) {
+class Device(val javaDevice: IDevice) {
   def property(what: String) = {
   }
 
