@@ -5,7 +5,7 @@ import collection.JavaConversions._
 import collection.immutable.Queue
 import JobQueue._
 
-class JobQueue[T <: Job] extends Queue[(DeviceSelector, T)]
+class JobQueue[T <: Job] //extends Queue[(DeviceSelector, T)]
 
 object JobQueue {
 
@@ -18,8 +18,8 @@ object JobQueue {
   def emulators = (d: Device) => d.isEmulator
 
   def devicesOnly = (d: Device) => !d.isEmulator
-
-  def propertyBased(f: ((String, String) => Boolean)) = (d: Device) => {
-    d.javaDevice.getProperties.map(f)
-  }
+//
+//  def propertyBased(f: (String, String) => Boolean) = (d: Device) => {
+//    d.javaDevice.getProperties.map(f)
+//  }
 }

@@ -12,7 +12,6 @@ class ZoidbergKernel extends Bootable {
 
   def startup = {
     DeviceStoreExtension(system).start()
-    DeviceStoreExtension(system).de
     val listener = system.actorOf(Props(new Actor {
       def receive = {
         case DeviceConnected(a) => println("Device connected: " + a.getSerialNumber)

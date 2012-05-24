@@ -1,8 +1,8 @@
 package novoda.android.zoidberg
 
-import akka.actor.{ActorRef, OneForOneStrategy, Actor}
 import novoda.zoidberg.akka.DeviceConnected
 import collection.immutable.HashMap
+import akka.actor.{ActorRef, Actor}
 
 
 /**
@@ -12,38 +12,23 @@ import collection.immutable.HashMap
  * val deviceService = Actor.actorOf[DeviceService].start()
  * </pre>
  */
-class DeviceService extends DeviceServer with DeviceManagement with JobManagement with JobStorageFactory {
-  def preStart() = {
-    remote.start("localhost", 2552);
-    remote.register("device:service", self)
-  }
-}
+class DeviceService extends DeviceServer with DeviceManagement with JobManagement with JobStorageFactory
 
 /**
  * Device server. Manages devices.
  */
 trait DeviceServer extends Actor {
-  self.faultHandler = OneForOneStrategy(List(classOf[Exception]), 5, 5000)
-  val storage: ActorRef
 
   def receive: Receive = deviceManagement orElse jobManagement
+
+  val storage: ActorRef
 
   protected def deviceManagement: Receive
 
   protected def jobManagement: Receive
 
-  protected def shutdownSessions(): Unit
-
-  protected def start(): Unit
-
   override def preStart() {
     super.preStart()
-  }
-
-  def postStop() = {
-    shutdownSessions
-    self.unlink(storage)
-    storage.stop()
   }
 }
 
@@ -57,16 +42,12 @@ trait DeviceManagement {
 
   val sessions = new HashMap[String, ActorRef]
 
-  protected def sessionManagement: Receive = {
+  protected def deviceManagement: Receive = {
     case _ => ""
   }
 
-  protected def start = {
-    system.eventStream.subscribe(listener, classOf[DeviceConnected])
-  }
-
-  protected def shutdownSessions = sessions.foreach {
-    case (_, session) => session.stop()
+  override def preStart() {
+    context.system.eventStream.subscribe(this.self, classOf[DeviceConnected])
   }
 }
 
@@ -75,9 +56,13 @@ trait DeviceManagement {
  */
 trait JobManagement {
   this: Actor =>
+
+  protected def jobManagement: Receive = {
+    case _ => ""
+  }
 }
 
 trait JobStorageFactory {
   this: Actor =>
-  val storage = this.self.spawnLink[JobManagement] // starts and links ChatStorage
+  val storage = this.self
 }
