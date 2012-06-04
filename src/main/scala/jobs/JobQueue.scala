@@ -1,5 +1,6 @@
 package jobs
 
+import device.Device
 import com.novoda.zoidberg.Device
 import collection.JavaConversions._
 import collection.immutable.Queue

@@ -1,19 +1,26 @@
-package com.novoda.zoidberg
+package novoda.zoidberg.device
 
-import com.android.ddmlib.IDevice
 import com.android.hierarchyviewerlib.device.ViewNode
 import com.android.hierarchyviewerlib.device.ViewNode.Property
+import com.android.ddmlib.{IShellOutputReceiver, IDevice}
 
-class RichDevice(device: IDevice) {
-
-  def views() {
-    //    DeviceBridge.startViewServer(device)
-    //    DeviceBridge.loadWindows(device)
-  }
-}
+class RichDevice(val device: IDevice) extends Shellable
 
 object RichDevice {
   implicit def toRichDevice(device: IDevice) = new RichDevice(device)
+
+  implicit def toLowerDevice(device: RichDevice) = device.device
+}
+
+trait Shellable {
+  this: RichDevice =>
+
+  type ShellOutput[T] = IShellOutputReceiver with (=> T)
+
+  def shell[T](command: String)(receiver: ShellOutput[T]) = {
+    device.executeShellCommand(command, receiver)
+    receiver
+  }
 }
 
 

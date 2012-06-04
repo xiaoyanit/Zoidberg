@@ -15,9 +15,10 @@ object ZoidbergBuild extends Build {
       scalaVersion := "2.9.2",
       androidHome := file(System.getenv("ANDROID_HOME")),
       resolvers += "Typesafe Releases" at "http://repo.typesafe.com/typesafe/releases",
+      resolvers += "Typesafe Snapshots" at "http://repo.typesafe.com/typesafe/snapshots",
       libraryDependencies ++= Seq(
-        "com.typesafe.akka" % "akka-actor" % "2.0.1",
-        "com.typesafe.akka" % "akka-kernel" % "2.0.1"
+        "com.typesafe.akka" % "akka-actor" % "2.1-SNAPSHOT",
+        "com.typesafe.akka" % "akka-kernel" % "2.1-SNAPSHOT"
       ),
       unmanagedJars in Compile <<= androidHome map {
         androidHome: File => (androidHome / "tools/lib/" ** (
