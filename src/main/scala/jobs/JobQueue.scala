@@ -1,16 +1,10 @@
 package jobs
 
-import device.Device
-import com.novoda.zoidberg.Device
-import collection.JavaConversions._
-import collection.immutable.Queue
-import JobQueue._
+import novoda.zoidberg.device.{RichDevice => Device}
 
 class JobQueue[T <: Job] //extends Queue[(DeviceSelector, T)]
 
 object JobQueue {
-
-  implicit def toPoorDevice(d: Device) = d.javaDevice
 
   type DeviceSelector = (Device => Boolean)
 

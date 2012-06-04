@@ -8,18 +8,17 @@ class RichDevice(val device: IDevice) extends Shellable
 
 object RichDevice {
   implicit def toRichDevice(device: IDevice) = new RichDevice(device)
-
   implicit def toLowerDevice(device: RichDevice) = device.device
 }
 
 trait Shellable {
   this: RichDevice =>
 
-  type ShellOutput[T] = IShellOutputReceiver with (=> T)
+  type ShellOutput[T] = IShellOutputReceiver with T
 
-  def shell[T](command: String)(receiver: ShellOutput[T]) = {
+  def shell[T](command: String)(receiver: ShellOutput[T]): T = {
     device.executeShellCommand(command, receiver)
-    receiver
+    receiver.asInstanceOf[T]
   }
 }
 

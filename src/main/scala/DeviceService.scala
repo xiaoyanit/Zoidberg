@@ -124,6 +124,7 @@ import novoda.zoidberg.device.RichDevice._
 class Device(device: IDevice) extends Actor {
 
   def receive = {
-    case Shell(command) => sender ! device.shell(command)
+    //case Shell(command) => sender ! device.shell(command)
+    case _ => ""
   }
 }

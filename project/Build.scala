@@ -18,7 +18,8 @@ object ZoidbergBuild extends Build {
       resolvers += "Typesafe Snapshots" at "http://repo.typesafe.com/typesafe/snapshots",
       libraryDependencies ++= Seq(
         "com.typesafe.akka" % "akka-actor" % "2.1-SNAPSHOT",
-        "com.typesafe.akka" % "akka-kernel" % "2.1-SNAPSHOT"
+        "com.typesafe.akka" % "akka-kernel" % "2.1-SNAPSHOT",
+        "org.scalatest" %% "scalatest" % "1.8" % "test"
       ),
       unmanagedJars in Compile <<= androidHome map {
         androidHome: File => (androidHome / "tools/lib/" ** (
