@@ -51,37 +51,14 @@ class DeviceStoreExtensionImpl(system: ActorSystem, adbLocation: Option[String])
     AndroidDebugBridge.removeDeviceChangeListener(this)
     AndroidDebugBridge.terminate()
   }
-
-  //
-  //  def newStore(listener: Listener): ActorRef = {
-  //  }
-  //
-//  def newDevice(): ActorRef = {
-//             Props(new )
-//  }
-}
-
-
-case class ShellCommand(s: String)
-
-class DeviceActor(device: IDevice) extends Actor {
-  def receive = {
-    case ShellCommand(command) => {
-      println("hello world")
-    }
-  }
 }
 
 object DeviceStoreExtensionImpl {
   implicit def enrichSystem(system: ExtendedActorSystem) = new DeviceStoreExtensionImpl(system, None)
 }
 
-
 object DeviceStoreExtension extends ExtensionId[DeviceStoreExtensionImpl] with ExtensionIdProvider {
-
   val adb = System.getenv("ANDROID_HOME") + "/platform-tools/adb"
-
   override def lookup = DeviceStoreExtension
-
   override def createExtension(system: ExtendedActorSystem) = new DeviceStoreExtensionImpl(system, Some(adb))
 }

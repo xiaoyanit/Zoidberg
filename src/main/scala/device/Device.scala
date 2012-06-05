@@ -3,16 +3,24 @@ package novoda.zoidberg.device
 import com.android.hierarchyviewerlib.device.ViewNode
 import com.android.hierarchyviewerlib.device.ViewNode.Property
 import com.android.ddmlib.{IShellOutputReceiver, IDevice}
+import akka.actor.Actor
+import com.android.chimpchat.hierarchyviewer.HierarchyViewer
+import com.android.ddmlib.log.LogReceiver
 
-class RichDevice(val device: IDevice) extends Shellable
+class RichDevice(val device: IDevice) extends Actor with Shellable {
+  def receive = {
+    case _ => ""
+  }
+}
 
 object RichDevice {
   implicit def toRichDevice(device: IDevice) = new RichDevice(device)
+
   implicit def toLowerDevice(device: RichDevice) = device.device
 }
 
 trait Shellable {
-  this: RichDevice =>
+  this: RichDevice with Actor =>
 
   type ShellOutput[T] = IShellOutputReceiver with T
 
@@ -22,21 +30,15 @@ trait Shellable {
   }
 }
 
-
-class Device(val javaDevice: IDevice) {
-  def property(what: String) = {
-  }
-
+trait Viewable {
+  this: RichDevice =>
 
   import collection.JavaConversions._
 
-  def views(f: ViewNode): Stream[ViewNode] = {
-    if (f.children.isEmpty) {
-      Stream(f)
-    } else {
-      f.children.toStream.map(views).flatten
-    }
-  }
+  lazy val hierarchyViewer = new HierarchyViewer(this)
+
+  def views(f: ViewNode): Stream[ViewNode] =
+    if (f.children.isEmpty) Stream(f) else f.children.toStream.map(views).flatten
 
   def find(f: ViewNode) = views(f).filter(_.properties.exists(isTextView))
 
@@ -45,18 +47,12 @@ class Device(val javaDevice: IDevice) {
   class RichViewProperty(prop: Property) {
     def isTextView = prop.name == "text:mText"
   }
+}
 
-  //  def find(f: ViewNode)(s: String) = {
-  //    views(f).filter(
-  //
-  ////      views(res105).foreach(a => a.namedProperties.filterKeys(_ equalsIgnoreCase "text:mText").foreach(n => println(n._2)))
-  ////        ! _.namedProperties.filterKeys(_.eq("android:text")).isEmpty
-  //
-  //    )
-  //  }
+trait Loggable {
+  this: RichDevice =>
 
-  //
-  //  def find(s: String): ViewNode = (v: ViewNode) => {
-  //    v.properties.
-  //  }
+  def log (to: A) {
+    this.device.runEventLogService(LogReceiver)
+  }
 }

@@ -25,3 +25,9 @@ class ZoidbergKernel extends Bootable {
     system.shutdown()
   }
 }
+
+
+// val actor = context.actorFor("akka://zoidberg@10.0.0.1:2552/user/devices/E2-2112")
+// actor ! Monkey(...)
+// actor ! Install(file)
+//

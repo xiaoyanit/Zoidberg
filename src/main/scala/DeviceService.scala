@@ -7,6 +7,7 @@ import akka.dispatch.Future
 import akka.util.Timeout
 import collection.parallel.mutable
 import com.android.ddmlib.IDevice
+import akka.event.PredicateClassifier
 
 
 /**

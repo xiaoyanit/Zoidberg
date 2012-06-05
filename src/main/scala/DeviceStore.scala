@@ -1,3 +1,4 @@
 
-trait DeviceStore {
+
+class DeviceStore {
 }
